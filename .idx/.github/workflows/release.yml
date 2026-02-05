@@ -30,6 +30,6 @@ jobs:
         with:
           files: |
             build/app/outputs/flutter-apk/app-release.apk
-            build/windows/runner/Release/*.exe
+            build/windows/x64/runner/Release/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
