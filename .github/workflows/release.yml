@@ -3,36 +3,58 @@ name: Publicacion Automatica
 on:
   push:
     tags:
-      - 'v*' # Se activa cuando creas una versión como v1.0
+      - 'v*'
 
 permissions:
-  contents: write 
-  
+  contents: write
+
 jobs:
-  build:
-    name: Compilando para Android y Windows
-    runs-on: windows-latest
+  android:
+    name: Build Android
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
 
       - uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
 
-      - name: Build Android
+      - name: Build APK
         run: flutter build apk --release
+
+      - name: Subir APK al Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/app/outputs/flutter-apk/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  windows:
+    name: Build Windows
+    runs-on: windows-latest
+    needs: android
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
 
       - name: Build Windows
         run: |
           flutter config --enable-windows-desktop
           flutter build windows --release
 
-      - name: Crear Release y Subir Archivos
+      - name: Empaquetar Windows
+        run: |
+          cd build/windows/x64/runner/Release
+          powershell Compress-Archive -Path * -DestinationPath EcoTracker-Windows.zip
+
+      - name: Subir Windows ZIP al Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/windows/x64/runner/Release/EcoTracker.exe
+          files: build/windows/x64/runner/Release/EcoTracker-Windows.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
