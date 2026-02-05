@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*' # Se activa cuando creas una versión como v1.0
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Compilando para Android y Windows
