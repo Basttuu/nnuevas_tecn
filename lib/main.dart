@@ -25,10 +25,10 @@ class PomodoroHome extends StatefulWidget {
 }
 
 class _PomodoroHomeState extends State<PomodoroHome> {
-  static const int focusTime = 25 * 60;
-  static const int breakTime = 5 * 60;
+  int focusMinutes = 25;
+  int breakMinutes = 5;
 
-  int remainingTime = focusTime;
+  int remainingTime = 25 * 60;
   bool isRunning = false;
   bool isFocusMode = true;
 
@@ -62,7 +62,8 @@ class _PomodoroHomeState extends State<PomodoroHome> {
   void resetTimer() {
     pauseTimer();
     setState(() {
-      remainingTime = isFocusMode ? focusTime : breakTime;
+      remainingTime =
+          isFocusMode ? focusMinutes * 60 : breakMinutes * 60;
     });
   }
 
@@ -70,16 +71,30 @@ class _PomodoroHomeState extends State<PomodoroHome> {
     pauseTimer();
     setState(() {
       isFocusMode = !isFocusMode;
-      remainingTime = isFocusMode ? focusTime : breakTime;
+      remainingTime =
+          isFocusMode ? focusMinutes * 60 : breakMinutes * 60;
     });
   }
 
-  // 🔹 Cambio manual de modo (clave para la demo)
   void changeModeManually() {
-    pauseTimer();
+    switchMode();
+  }
+
+  void updateFocusMinutes(int value) {
     setState(() {
-      isFocusMode = !isFocusMode;
-      remainingTime = isFocusMode ? focusTime : breakTime;
+      focusMinutes = value;
+      if (isFocusMode && !isRunning) {
+        remainingTime = focusMinutes * 60;
+      }
+    });
+  }
+
+  void updateBreakMinutes(int value) {
+    setState(() {
+      breakMinutes = value;
+      if (!isFocusMode && !isRunning) {
+        remainingTime = breakMinutes * 60;
+      }
     });
   }
 
@@ -94,52 +109,113 @@ class _PomodoroHomeState extends State<PomodoroHome> {
     return Scaffold(
       backgroundColor: isFocusMode ? Colors.red[400] : Colors.green[400],
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              isFocusMode ? 'MODO ENFOQUE 🍅' : 'MODO DESCANSO 😴',
-              style: const TextStyle(
-                fontSize: 28,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                isFocusMode ? 'MODO ENFOQUE 🍅' : 'MODO DESCANSO 😴',
+                style: const TextStyle(
+                  fontSize: 28,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              formatTime(remainingTime),
-              style: const TextStyle(
-                fontSize: 64,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 20),
+              Text(
+                formatTime(remainingTime),
+                style: const TextStyle(
+                  fontSize: 64,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 30),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: isRunning ? pauseTimer : startTimer,
-                  child: Text(isRunning ? 'Pausar' : 'Iniciar'),
+              const SizedBox(height: 30),
+
+              // Controles del temporizador
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: isRunning ? pauseTimer : startTimer,
+                    child: Text(isRunning ? 'Pausar' : 'Iniciar'),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: resetTimer,
+                    child: const Text('Reset'),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: changeModeManually,
+                    child: const Text('Cambiar modo'),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 30),
+
+              // Configuración de tiempos
+              Card(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Configuración de tiempos (minutos)',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Enfoque'),
+                          DropdownButton<int>(
+                            value: focusMinutes,
+                            items: [15, 25, 30, 45, 60]
+                                .map((e) => DropdownMenuItem(
+                                      value: e,
+                                      child: Text('$e'),
+                                    ))
+                                .toList(),
+                            onChanged: isRunning
+                                ? null
+                                : (value) =>
+                                    updateFocusMinutes(value!),
+                          ),
+                        ],
+                      ),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Descanso'),
+                          DropdownButton<int>(
+                            value: breakMinutes,
+                            items: [5, 10, 15, 20]
+                                .map((e) => DropdownMenuItem(
+                                      value: e,
+                                      child: Text('$e'),
+                                    ))
+                                .toList(),
+                            onChanged: isRunning
+                                ? null
+                                : (value) =>
+                                    updateBreakMinutes(value!),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: resetTimer,
-                  child: const Text('Reset'),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: changeModeManually,
-                  child: const Text('Cambiar modo'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Modo manual para pruebas y demostración',
-              style: TextStyle(color: Colors.white70),
-            )
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
