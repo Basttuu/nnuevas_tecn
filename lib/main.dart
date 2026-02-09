@@ -1,99 +1,119 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(MaterialApp(home: EcoLog()));
+  runApp(const MyApp());
 }
 
-class EcoLog extends StatefulWidget {
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
-  _EcoLogState createState() => _EcoLogState();
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: PomodoroPage(),
+    );
+  }
 }
 
-class _EcoLogState extends State<EcoLog> {
-  final List<String> _data = [];
-  final TextEditingController _input = TextEditingController();
+class PomodoroPage extends StatefulWidget {
+  @override
+  State<PomodoroPage> createState() => _PomodoroPageState();
+}
 
-  Color _backgroundColor = Colors.white;
-  String _colorSeleccionado = "Blanco";
+class _PomodoroPageState extends State<PomodoroPage> {
+  static const int focusTime = 25 * 60;
+  static const int breakTime = 5 * 60;
 
-  void _cambiarColor(Color color, String nombre) {
-    setState(() {
-      _backgroundColor = color;
-      _colorSeleccionado = nombre;
+  int remainingTime = focusTime;
+  bool isRunning = false;
+  bool isFocusMode = true;
+  Timer? timer;
+
+  void startTimer() {
+    if (timer != null) return;
+
+    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (remainingTime > 0) {
+          remainingTime--;
+        } else {
+          switchMode();
+        }
+      });
     });
+
+    setState(() => isRunning = true);
+  }
+
+  void pauseTimer() {
+    timer?.cancel();
+    timer = null;
+    setState(() => isRunning = false);
+  }
+
+  void resetTimer() {
+    pauseTimer();
+    setState(() {
+      isFocusMode = true;
+      remainingTime = focusTime;
+    });
+  }
+
+  void switchMode() {
+    setState(() {
+      isFocusMode = !isFocusMode;
+      remainingTime = isFocusMode ? focusTime : breakTime;
+    });
+  }
+
+  String formatTime(int seconds) {
+    final min = (seconds ~/ 60).toString().padLeft(2, '0');
+    final sec = (seconds % 60).toString().padLeft(2, '0');
+    return "$min:$sec";
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _backgroundColor,
-      appBar: AppBar(
-        title: Text("EcoTracker PoC"),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              "Color seleccionado: $_colorSeleccionado",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
-
-          // Botones de color
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                onPressed: () =>
-                    _cambiarColor(Colors.green.shade100, "Verde"),
-                child: Text("Verde"),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                onPressed: () =>
-                    _cambiarColor(Colors.blue.shade100, "Azul"),
-                child: Text("Azul"),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-                onPressed: () =>
-                    _cambiarColor(Colors.grey.shade300, "Gris"),
-                child: Text("Gris"),
-              ),
-            ],
-          ),
-
-          SizedBox(height: 20),
-
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: TextField(
-              controller: _input,
-              decoration: InputDecoration(
-                labelText: "Nombre del Punto",
+      backgroundColor: isFocusMode ? Colors.redAccent : Colors.greenAccent,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              isFocusMode ? "Modo Enfoque" : "Modo Descanso",
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _data.add(_input.text);
-                _input.clear();
-              });
-            },
-            child: Text("Registrar Punto"),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _data.length,
-              itemBuilder: (c, i) => ListTile(
-                title: Text(_data[i]),
+            const SizedBox(height: 20),
+            Text(
+              formatTime(remainingTime),
+              style: const TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 30),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: isRunning ? pauseTimer : startTimer,
+                  child: Text(isRunning ? "Pausar" : "Iniciar"),
+                ),
+                const SizedBox(width: 15),
+                ElevatedButton(
+                  onPressed: resetTimer,
+                  child: const Text("Reset"),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
