@@ -2,66 +2,81 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const PomodoroApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class PomodoroApp extends StatelessWidget {
+  const PomodoroApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: PomodoroPage(),
+      home: PomodoroHome(),
     );
   }
 }
 
-class PomodoroPage extends StatefulWidget {
+class PomodoroHome extends StatefulWidget {
+  const PomodoroHome({super.key});
+
   @override
-  State<PomodoroPage> createState() => _PomodoroPageState();
+  State<PomodoroHome> createState() => _PomodoroHomeState();
 }
 
-class _PomodoroPageState extends State<PomodoroPage> {
+class _PomodoroHomeState extends State<PomodoroHome> {
   static const int focusTime = 25 * 60;
   static const int breakTime = 5 * 60;
 
   int remainingTime = focusTime;
   bool isRunning = false;
   bool isFocusMode = true;
+
   Timer? timer;
 
   void startTimer() {
-    if (timer != null) return;
+    if (isRunning) return;
 
-    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        if (remainingTime > 0) {
-          remainingTime--;
-        } else {
-          switchMode();
-        }
-      });
+    setState(() {
+      isRunning = true;
     });
 
-    setState(() => isRunning = true);
+    timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
+      if (remainingTime > 0) {
+        setState(() {
+          remainingTime--;
+        });
+      } else {
+        switchMode();
+      }
+    });
   }
 
   void pauseTimer() {
     timer?.cancel();
-    timer = null;
-    setState(() => isRunning = false);
+    setState(() {
+      isRunning = false;
+    });
   }
 
   void resetTimer() {
     pauseTimer();
     setState(() {
-      isFocusMode = true;
-      remainingTime = focusTime;
+      remainingTime = isFocusMode ? focusTime : breakTime;
     });
   }
 
   void switchMode() {
+    pauseTimer();
+    setState(() {
+      isFocusMode = !isFocusMode;
+      remainingTime = isFocusMode ? focusTime : breakTime;
+    });
+  }
+
+  // 🔹 Cambio manual de modo (clave para la demo)
+  void changeModeManually() {
+    pauseTimer();
     setState(() {
       isFocusMode = !isFocusMode;
       remainingTime = isFocusMode ? focusTime : breakTime;
@@ -69,23 +84,24 @@ class _PomodoroPageState extends State<PomodoroPage> {
   }
 
   String formatTime(int seconds) {
-    final min = (seconds ~/ 60).toString().padLeft(2, '0');
-    final sec = (seconds % 60).toString().padLeft(2, '0');
-    return "$min:$sec";
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: isFocusMode ? Colors.redAccent : Colors.greenAccent,
+      backgroundColor: isFocusMode ? Colors.red[400] : Colors.green[400],
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              isFocusMode ? "Modo Enfoque" : "Modo Descanso",
+              isFocusMode ? 'MODO ENFOQUE 🍅' : 'MODO DESCANSO 😴',
               style: const TextStyle(
                 fontSize: 28,
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -93,7 +109,8 @@ class _PomodoroPageState extends State<PomodoroPage> {
             Text(
               formatTime(remainingTime),
               style: const TextStyle(
-                fontSize: 48,
+                fontSize: 64,
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -103,15 +120,25 @@ class _PomodoroPageState extends State<PomodoroPage> {
               children: [
                 ElevatedButton(
                   onPressed: isRunning ? pauseTimer : startTimer,
-                  child: Text(isRunning ? "Pausar" : "Iniciar"),
+                  child: Text(isRunning ? 'Pausar' : 'Iniciar'),
                 ),
-                const SizedBox(width: 15),
+                const SizedBox(width: 10),
                 ElevatedButton(
                   onPressed: resetTimer,
-                  child: const Text("Reset"),
+                  child: const Text('Reset'),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: changeModeManually,
+                  child: const Text('Cambiar modo'),
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+            const Text(
+              'Modo manual para pruebas y demostración',
+              style: TextStyle(color: Colors.white70),
+            )
           ],
         ),
       ),
